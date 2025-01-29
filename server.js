@@ -97,3 +97,60 @@ app.post('/send-command', (req, res) => {
     });
 });
 
+
+
+// Device Detection  - For auto
+
+const deviceTypes = {
+    'XRDR': 'RFID Reader',
+    'XBTN': 'XT-Buttons',
+    'XSNS': 'Sensor Module',
+    'XLEDR': 'LED Controller',
+    'XSLD': 'Slider Module',
+    'X-EYE': 'Presence Sensor',
+    'XT-EF': 'Air Gesture Sensor',
+    'XZ-W21': 'Weight Sensor',
+    'X-Light': 'LED Control Module',
+    'X-Audio': 'Audio Module',
+    'XE-ALS': 'Ambient Light Sensor',
+    'XE-TEMP': 'Temperature Sensor',
+    'XS-Snapper': 'Magnetic Pick-Up Sensor',
+    'XV-Gesture': 'Hand Gesture Sensor',
+    'XQ-Lidar': 'Lidar Sensor'
+};
+
+let detectedDevice = 'Unknown Device';
+
+serialPort.open((err) => {
+    if (err) {
+        log(`❌ Failed to open serial port: ${err.message}`);
+    } else {
+        log(`✅ Serial port ${serialPortPath} opened successfully`);
+        detectDeviceType();
+    }
+});
+
+
+// Send identification request
+function detectDeviceType() {
+    const command = 'XKF\r'; // XKF command to request device info
+    serialPort.write(Buffer.from(command, 'ascii'), (err) => {
+        if (err) {
+            log(`❌ Error sending identification command: ${err.message}`);
+        } else {
+            log(`🔍 Sent device identification request`);
+        }
+    });
+}
+
+// Parse device response
+function detectDeviceFromResponse(response) {
+    for (const [key, device] of Object.entries(deviceTypes)) {
+        if (response.includes(key)) {
+            detectedDevice = device;
+            log(`✅ Detected Device: ${device}`);
+            io.emit('deviceDetected', device); // Send to frontend
+            break;
+        }
+    }
+}

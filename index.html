@@ -102,6 +102,8 @@
     <p id="response"></p>
     <h2>Received Data:</h2>
     <div id="receivedData">Waiting for data...</div>
+    <h2>Connected Device:</h2>
+<div id="deviceInfo">Detecting...</div>
     
     <h2>Log History</h2>
     <div id="logContainer">No logs yet...</div>
@@ -149,6 +151,14 @@
             if (logHistory.length > 5) logHistory.pop();
             logContainer.innerHTML = logHistory.map(log => `<p>${log}</p>`).join('');
         });
+
+        socket.on('deviceDetected', (device) => {
+        document.getElementById('deviceInfo').textContent = `Device: ${device}`;
+    });
+
+    socket.on('nexmosphereData', (data) => {
+        console.log("Received:", data);
+    });
     </script>
 </body>
 </html>
