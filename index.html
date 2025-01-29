@@ -5,40 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nexmosphere Controller</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
+
         body {
-            font-family: Verdana, Geneva, Tahoma, sans-serif;            
-            margin: 20px;
-            color: darkblue;
-        }
-        label, input, button {
-            margin: 5px;
-        }
-        .commandform {
-            background-color: darkblue;
-            font-family: Arial, Helvetica, sans-serif;
-            color: aliceblue;
-            padding: 10%;
-            border-radius: 25px;
-            box-shadow: 5px 5px 2px 6px black;
-        }
-        .button {
-            background-color:burlywood;
-            color: aliceblue;
-            font-family: Verdana, Geneva, Tahoma, sans-serif;
-            border: none;
-            padding: 7.5px 16px;
-            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            background-color: #0d0d0d;
+            color: #00ffff;
             text-align: center;
-            display: inline-block;
-            font-size: 15px;
-            text-decoration: none;
-            box-shadow: 2px 2px 1px 3px black;
+            margin: 0;
+            padding: 0;
         }
+
+        h1 {
+            font-size: 2rem;
+            text-shadow: 0 0 10px #00ffff;
+            margin-top: 20px;
+        }
+
+        .commandform {
+            background: linear-gradient(135deg, #001f3f, #004080);
+            color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px #00ffff;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        input, button {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #000;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1rem;
+            box-shadow: 0 0 10px #00ffff;
+            outline: none;
+        }
+
+        .button {
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .button:hover {
+            background-color: #00ffff;
+            color: #000;
+            box-shadow: 0 0 20px #00ffff;
+        }
+
         #receivedData {
             margin-top: 20px;
-            padding: 10px;
-            background-color: lightgray;
-            border-radius: 5px;
+            padding: 15px;
+            background-color: #002233;
+            border-radius: 10px;
+            box-shadow: 0 0 15px #00ffff;
+            display: inline-block;
+            font-size: 1.2rem;
+        }
+
+        #logContainer {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #001a33;
+            border-radius: 10px;
+            box-shadow: 0 0 15px #00ffff;
+            display: inline-block;
+            font-size: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 50%;
+        }
+
+        @keyframes glow {
+            0% { text-shadow: 0 0 5px #00ffff; }
+            50% { text-shadow: 0 0 20px #00ffff; }
+            100% { text-shadow: 0 0 5px #00ffff; }
         }
     </style>
 </head>
@@ -57,49 +102,52 @@
     <p id="response"></p>
     <h2>Received Data:</h2>
     <div id="receivedData">Waiting for data...</div>
+    
+    <h2>Log History</h2>
+    <div id="logContainer">No logs yet...</div>
 
     <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
     <script>
+        const logContainer = document.getElementById('logContainer');
+        let logHistory = [];
+        
         document.getElementById('commandForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+            e.preventDefault();
 
-    const deviceCode = document.getElementById('deviceCode').value.trim(); // X001A or similar
-    const address = document.getElementById('address').value.trim(); // Address input (3-digit)
-    
-    if (!deviceCode || !address) {
-        document.getElementById('response').textContent = "Error: Device Code and Address are required!";
-        return;
-    }
+            const deviceCode = document.getElementById('deviceCode').value.trim();
+            const address = document.getElementById('address').value.trim();
+            
+            if (!deviceCode || !address) {
+                document.getElementById('response').textContent = "Error: Device Code and Address are required!";
+                return;
+            }
 
-    // Ensure address is formatted correctly (3 digits if needed)
-    const formattedAddress = address.length === 1 ? `[${address}]` : `[${address.padStart(3, '0')}]`;
+            const formattedAddress = address.length === 1 ? `[${address}]` : `[${address.padStart(3, '0')}]`;
+            const formattedCommand = `${deviceCode}${formattedAddress}`;
 
-    // Construct the correct command
-    const formattedCommand = `${deviceCode}${formattedAddress}`;
+            try {
+                const response = await fetch('http://localhost:3000/send-command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: formattedCommand }),
+                });
 
-    try {
-        const response = await fetch('http://localhost:3000/send-command', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ command: formattedCommand }),
+                const data = await response.json();
+                document.getElementById('response').textContent = data.message || data.error;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('response').textContent = 'Failed to send command';
+            }
         });
 
-        const data = await response.json();
-        document.getElementById('response').textContent = data.message || data.error;
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('response').textContent = 'Failed to send command';
-    }
-});
-
-
-        // Set up WebSocket connection to receive data
         const socket = io('http://localhost:3000');
         socket.on('nexmosphereData', (data) => {
             const receivedDataDiv = document.getElementById('receivedData');
             receivedDataDiv.textContent = `Received: ${data}`;
+            
+            logHistory.unshift(data);
+            if (logHistory.length > 5) logHistory.pop();
+            logContainer.innerHTML = logHistory.map(log => `<p>${log}</p>`).join('');
         });
     </script>
 </body>
