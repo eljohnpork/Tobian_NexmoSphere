@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { SerialPort } = require('serialport');
+const { SerialPort, Binding } = require('serialport');
 const { Server } = require('socket.io');
 const fs = require('fs');
 
@@ -53,9 +53,13 @@ io.on('connection', (socket) => {
 
 let buffer = '';
 
+
+
+
 serialPort.on('data', (data) => {
     const chunk = data.toString('ascii'); 
     buffer += chunk; 
+    const datatobian = buffer.trim();
 
     if (buffer.includes('\r') || buffer.includes('\n')) {
         const receivedData = buffer.trim(); // Remove any extra spaces
@@ -66,6 +70,11 @@ serialPort.on('data', (data) => {
     }
 });
 
+Binding.list().then(ports => {
+    console.log("Available Ports:", ports);
+}).catch(err => console.error(err));
+
+
 app.post('/send-command', (req, res) => {
     const { command } = req.body;
 
@@ -74,13 +83,17 @@ app.post('/send-command', (req, res) => {
         return res.status(400).json({ error: 'Command is required' });
     }
 
-    serialPort.write(command, (err) => {
+    // Convert the command to ASCII buffer
+    const asciiCommand = Buffer.from(command, 'ascii');
+
+    serialPort.write(asciiCommand, (err) => {
         if (err) {
             log(`❌ Error sending command: ${err.message}`);
             return res.status(500).json({ error: 'Failed to send command' });
         }
 
-        log(`✅ Command sent: ${command}`);
+        log(`✅ Command sent in ASCII: ${command}`);
         res.json({ success: true, message: `Command sent: ${command}` });
     });
 });
+
