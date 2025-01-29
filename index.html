@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexmosphere Controller</title>
+    <style>
+        body {
+            font-family: Verdana, Geneva, Tahoma, sans-serif;            
+            margin: 20px;
+            color: darkblue;
+        }
+        label, input, button {
+            margin: 5px;
+        }
+        .commandform {
+            background-color: darkblue;
+            font-family: Arial, Helvetica, sans-serif;
+            color: aliceblue;
+            padding: 10%;
+            border-radius: 25px;
+            box-shadow: 5px 5px 2px 6px black;
+        }
+        .button {
+            background-color:burlywood;
+            color: aliceblue;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            border: none;
+            padding: 7.5px 16px;
+            border-radius: 4px;
+            text-align: center;
+            display: inline-block;
+            font-size: 15px;
+            text-decoration: none;
+            box-shadow: 2px 2px 1px 3px black;
+        }
+        #receivedData {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: lightgray;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nexmosphere Controller</h1>
+    <form id="commandForm" class="commandform">
+        <label for="deviceCode">Device Code (e.g., X001A, X002B):</label>
+        <input type="text" id="deviceCode" required>
+        <br>
+        <label for="address">Address (1 to 3-digit number):</label>
+        <input type="number" id="address" min="0" max="999" required>
+        <br>
+        <button type="submit" class="button">Send Command</button>
+    </form>
+    
+    <p id="response"></p>
+    <h2>Received Data:</h2>
+    <div id="receivedData">Waiting for data...</div>
+
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script>
+        document.getElementById('commandForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const deviceCode = document.getElementById('deviceCode').value.trim(); // X001A or similar
+    const address = document.getElementById('address').value.trim(); // Address input (3-digit)
+    
+    if (!deviceCode || !address) {
+        document.getElementById('response').textContent = "Error: Device Code and Address are required!";
+        return;
+    }
+
+    // Ensure address is formatted correctly (3 digits if needed)
+    const formattedAddress = address.length === 1 ? `[${address}]` : `[${address.padStart(3, '0')}]`;
+
+    // Construct the correct command
+    const formattedCommand = `${deviceCode}${formattedAddress}`;
+
+    try {
+        const response = await fetch('http://localhost:3000/send-command', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ command: formattedCommand }),
+        });
+
+        const data = await response.json();
+        document.getElementById('response').textContent = data.message || data.error;
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('response').textContent = 'Failed to send command';
+    }
+});
+
+
+        // Set up WebSocket connection to receive data
+        const socket = io('http://localhost:3000');
+        socket.on('nexmosphereData', (data) => {
+            const receivedDataDiv = document.getElementById('receivedData');
+            receivedDataDiv.textContent = `Received: ${data}`;
+        });
+    </script>
+</body>
+</html>
