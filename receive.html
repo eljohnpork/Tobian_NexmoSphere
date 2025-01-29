@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexmoSphere Functions Test</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #0d0d0d;
+            color: #00ffff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            text-shadow: 0 0 10px #00ffff;
+            margin-top: 20px;
+        }
+
+        .prompt-container {
+            background: linear-gradient(135deg, #001f3f, #004080);
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px #00ffff;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        input, button {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #000;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1rem;
+            box-shadow: 0 0 10px #00ffff;
+            outline: none;
+        }
+
+        .button {
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .button:hover {
+            background-color: #00ffff;
+            color: #000;
+            box-shadow: 0 0 20px #00ffff;
+        }
+
+        .image-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .image-container img {
+            width: 200px;
+            height: auto;
+            border-radius: 10px;
+            display: none;
+            box-shadow: 0 0 15px #00ffff;
+        }
+    </style>
+</head>
+<body>
+    <h1>NexmoSphere Functions Test</h1>
+    <div class="prompt-container">
+        <label>Enter Listening Commands:</label><br>
+        <input type="text" id="prompt1" placeholder="Command for Image 1">
+        <input type="text" id="prompt2" placeholder="Command for Image 2">
+        <input type="text" id="prompt3" placeholder="Command for Image 3">
+        <input type="text" id="prompt4" placeholder="Command for Image 4">
+        <br>
+        <button class="button" onclick="updateCommands()">Set Commands</button>
+    </div>
+    
+    <h2>Triggered Images:</h2>
+    <div class="image-container">
+        <img id="image1" src="img/image1.jpg">
+        <img id="image2" src="img/image2.jpg">
+        <img id="image3" src="img/image3.jpg">
+        <img id="image4" src="img/image4.jpg">
+    </div>
+
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script>
+let commandMap = {};
+
+function updateCommands() {
+    commandMap = {
+        [document.getElementById('prompt1').value.trim()]: 'image1',
+        [document.getElementById('prompt2').value.trim()]: 'image2',
+        [document.getElementById('prompt3').value.trim()]: 'image3',
+        [document.getElementById('prompt4').value.trim()]: 'image4'
+    };
+}
+
+        const socket = io('http://localhost:3000');
+        socket.on('nexmosphereData', (data) => {
+            console.log(`Received: ${data}`);
+            if (commandMap[data]) {
+                document.getElementById(commandMap[data]).style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
